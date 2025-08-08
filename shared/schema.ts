@@ -12,7 +12,7 @@ import {
   bigint,
   integer,
   primaryKey,
-boolean,
+  boolean,          // ? add this
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -62,7 +62,8 @@ export const articles = pgTable("articles", {
   content: text("content").notNull(),
   categoryId: integer("category_id").references(() => categories.id),
   authorId: integer("author_id").references(() => users.id),
-  isPublished: boolean("is_published").default(false).notNull(),                           
+  isPublished: boolean("is_published").default(false).notNull(), // NEW
+  publishedAt: timestamp("published_at"),                        // optional
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
