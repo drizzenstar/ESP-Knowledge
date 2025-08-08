@@ -21,22 +21,27 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const { toast } = useToast();
+
+  // Be explicit: fetch current user via apiRequest (returns JSON)
   const {
     data: user,
     error,
     isLoading,
   } = useQuery<SelectUser | undefined, Error>({
     queryKey: ["/api/user"],
+    queryFn: () => apiRequest("GET", "/api/user"),
     retry: false,
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginUser) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      // apiRequest returns JSON — no `.json()` call here
+      return await apiRequest("POST", "/api/login", credentials);
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: async (user: SelectUser) => {
+      // cache the user and/or refetch the /api/user endpoint
       queryClient.setQueryData(["/api/user"], user);
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Welcome back!",
         description: `Hello ${user.email}`,
@@ -53,11 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterUser) => {
-      const res = await apiRequest("POST", "/api/register", credentials);
-      return await res.json();
+      return await apiRequest("POST", "/api/register", credentials);
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: async (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Account created!",
         description: `Welcome ${user.email}`,
@@ -76,8 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
     mutationFn: async () => {
       await apiRequest("POST", "/api/logout");
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.setQueryData(["/api/user"], null);
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Logged out",
         description: "See you next time!",
