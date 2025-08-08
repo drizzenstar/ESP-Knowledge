@@ -10,17 +10,25 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  data?: any,
+  isFormData = false
+) {
+  const opts: RequestInit = { method, credentials: "include" };
 
-  await throwIfResNotOk(res);
-  return res;
+  if (isFormData || data instanceof FormData) {
+    // IMPORTANT: let the browser set the multipart boundary header
+    opts.body = data;
+  } else if (data !== undefined) {
+    opts.headers = { "Content-Type": "application/json" };
+    opts.body = JSON.stringify(data);
+  }
+
+  const res = await fetch(url, opts);
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw Object.assign(new Error(json.message || res.statusText), { status: res.status });
+  }
+  return json;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

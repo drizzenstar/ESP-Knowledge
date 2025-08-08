@@ -18,9 +18,9 @@ export default function FileUploadZone({ onFilesUploaded }: Props) {
     setUploading(true);
     try {
       const form = new FormData();
-      arr.forEach((f) => form.append("files", f)); // <-- field name `files`
+      arr.forEach((f) => form.append("files", f)); // field name: files
 
-      // IMPORTANT: tell apiRequest this is FormData so it does NOT set JSON headers
+      // IMPORTANT: pass FormData (no JSON headers)
       const res = await apiRequest("POST", "/api/files/upload", form, true);
       onFilesUploaded?.(res.files ?? []);
       queryClient.invalidateQueries({ queryKey: ["/api/files"] });
@@ -46,32 +46,26 @@ export default function FileUploadZone({ onFilesUploaded }: Props) {
 
   return (
     <div
-      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(true);
+      }}
       onDragLeave={() => setDragOver(false)}
       onDrop={onDrop}
       className={`border-2 border-dashed rounded-xl p-8 text-center transition ${
         dragOver ? "border-blue-500 bg-blue-50" : "border-gray-300"
       }`}
     >
-      <input
-        ref={inputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={onInputChange}
-      />
+      <input ref={inputRef} type="file" multiple className="hidden" onChange={onInputChange} />
 
-      <div className="mb-2 text-gray-600">
-        Drop files here or browse files
-      </div>
+      <div className="mb-2 text-gray-600">Drop files here or browse files</div>
 
       <Button type="button" onClick={openPicker} disabled={uploading}>
         {uploading ? "Uploading..." : "Browse files"}
       </Button>
 
-      <p className="mt-3 text-xs text-gray-500">
-        Supports PDF, DOC, DOCX, images, videos (max 10MB each)
-      </p>
+      <p className="mt-3 text-xs text-gray-500">Supports PDF, DOC, DOCX, images, videos (max 10MB each)</p>
     </div>
   );
 }

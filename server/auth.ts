@@ -10,6 +10,7 @@ import { User as SelectUser } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 
 declare global {
+  // lets req.user include our DB fields
   namespace Express {
     interface User extends SelectUser {}
   }
@@ -20,17 +21,16 @@ const scryptAsync = promisify(scrypt);
 /* ───────── Password helpers ───────── */
 
 export async function hashPassword(password: string): Promise<string> {
-  // default format: scrypt hex.salt
+  // scrypt format: <hex>.<salt>
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
 }
 
-// Supports bcrypt ($2*), scrypt (hex.salt), and (only if it ever existed) legacy plaintext
 export async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
   if (!stored) return false;
 
-  // bcrypt
+  // bcrypt hash?
   if (stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$")) {
     try {
       return await bcrypt.compare(supplied, stored);
@@ -39,7 +39,7 @@ export async function comparePasswords(supplied: string, stored: string): Promis
     }
   }
 
-  // scrypt hex.salt
+  // scrypt hex.salt?
   if (stored.includes(".")) {
     const [hashed, salt] = stored.split(".");
     if (!hashed || !salt) return false;
@@ -53,14 +53,13 @@ export async function comparePasswords(supplied: string, stored: string): Promis
     }
   }
 
-  // (only if a legacy plaintext value somehow remains)
+  // (very legacy) plaintext fallback
   return supplied === stored;
 }
 
 /* ───────── Seed default users ───────── */
 
 async function createDefaultUsers() {
-  // ← move the guard here (no top-level return!)
   if (process.env.SEED_DEFAULT_USERS !== "true") return;
 
   try {
@@ -94,8 +93,9 @@ async function createDefaultUsers() {
 
 export function setupAuth(app: Express) {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
+  const PgStore = connectPg(session);
+
+  const sessionStore = new PgStore({
     conString: process.env.DATABASE_URL,
     createTableIfMissing: true,
     ttl: sessionTtl,
@@ -109,7 +109,7 @@ export function setupAuth(app: Express) {
     store: sessionStore,
     cookie: {
       httpOnly: true,
-      secure: false, // set true behind HTTPS in prod
+      secure: false, // set true with HTTPS in prod
       maxAge: sessionTtl,
     },
   };
@@ -119,7 +119,6 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Local strategy: supports bcrypt & scrypt; upgrades bcrypt→scrypt after successful login
   passport.use(
     new LocalStrategy({ usernameField: "email" }, async (email, password, done) => {
       try {
@@ -131,7 +130,7 @@ export function setupAuth(app: Express) {
 
         let ok = await comparePasswords(password, stored);
 
-        // If login succeeded with bcrypt, upgrade to scrypt for consistency
+        // If bcrypt verified, upgrade to scrypt for consistency
         if (ok && isBcrypt) {
           const newHash = await hashPassword(password);
           await storage.updateUser(user.id, { passwordHash: newHash });
@@ -156,8 +155,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  /* ───────── Routes ───────── */
-
+  // Routes (all inside this function)
   app.post("/api/register", async (req, res, next) => {
     try {
       const { email, password, role } = req.body;
@@ -172,10 +170,7 @@ export function setupAuth(app: Express) {
       });
 
       const { passwordHash: _ph, ...userResponse } = user as any;
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.status(201).json(userResponse);
-      });
+      req.login(user, (err) => (err ? next(err) : res.status(201).json(userResponse)));
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({ message: "Registration failed" });
@@ -188,10 +183,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res, next) => {
-    req.logout((err) => {
-      if (err) return next(err);
-      res.sendStatus(200);
-    });
+    req.logout((err) => (err ? next(err) : res.sendStatus(200)));
   });
 
   app.get("/api/user", (req, res) => {
@@ -200,7 +192,7 @@ export function setupAuth(app: Express) {
     res.json(userResponse);
   });
 
-  // Call seeding (it will no-op unless SEED_DEFAULT_USERS=true)
+  // only runs if SEED_DEFAULT_USERS=true
   createDefaultUsers();
 }
 
@@ -208,6 +200,3 @@ export function isAuthenticated(req: any, res: any, next: any) {
   if (req.isAuthenticated()) return next();
   res.status(401).json({ message: "Unauthorized" });
 }
-app.get("/api/logout", (req, res, next) => {
-  req.logout((err) => (err ? next(err) : res.sendStatus(200)));
-});

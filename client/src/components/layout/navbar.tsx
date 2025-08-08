@@ -13,17 +13,15 @@ export default function Navbar() {
   const [, setLocation] = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-// above return()
-async function handleSignOut() {
-  try {
-    await apiRequest("POST", "/api/logout");  // <-- POST, not GET
-  } catch {
-    // ignore; we’ll still kick back to landing
-  } finally {
-    window.location.href = "/";               // go to home, NOT /api/logout
+  async function handleSignOut() {
+    try {
+      await apiRequest("POST", "/api/logout");
+    } catch {
+      // ignore
+    } finally {
+      window.location.href = "/";
+    }
   }
-}
-
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 fixed w-full top-0 z-40">
@@ -37,31 +35,22 @@ async function handleSignOut() {
               <span className="ml-3 text-xl font-semibold text-gray-900">Knowledge Base</span>
             </div>
           </div>
-          
+
           {/* Search Bar */}
           <div className="flex-1 max-w-lg mx-8">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Search articles, categories..."
-                className="pl-10"
-              />
+              <Input type="text" placeholder="Search articles, categories..." className="pl-10" />
             </div>
           </div>
-          
+
           {/* User Menu */}
           <div className="flex items-center space-x-4">
-            <Button
-  variant="ghost"
-  className="w-full justify-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-  onClick={() => {
-    setShowUserMenu(false);
-    handleSignOut();
-  }}
->
-  Sign Out
-</Button>            
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-error"></span>
+            </Button>
+
             <div className="relative">
               <Button
                 variant="ghost"
@@ -76,18 +65,17 @@ async function handleSignOut() {
                 </Avatar>
                 <div className="hidden sm:block text-left">
                   <div className="text-sm font-medium text-gray-700">
-                    {user?.firstName && user?.lastName 
-                      ? `${user.firstName} ${user.lastName}` 
-                      : user?.email || "User"
-                    }
+                    {user?.firstName && user?.lastName
+                      ? `${user.firstName} ${user.lastName}`
+                      : user?.email || "User"}
                   </div>
                 </div>
-                <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="hidden sm:inline-flex">
-                  {user?.role || 'User'}
+                <Badge variant={user?.role === "admin" ? "default" : "secondary"} className="hidden sm:inline-flex">
+                  {user?.role || "User"}
                 </Badge>
                 <ChevronDown className="h-4 w-4 text-gray-400" />
               </Button>
-              
+
               {/* User Dropdown Menu */}
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
@@ -96,7 +84,7 @@ async function handleSignOut() {
                       variant="ghost"
                       className="w-full justify-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => {
-                        setLocation('/profile');
+                        setLocation("/profile");
                         setShowUserMenu(false);
                       }}
                     >
@@ -108,7 +96,7 @@ async function handleSignOut() {
                       className="w-full justify-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => {
                         setShowUserMenu(false);
-                        window.location.href = '/api/logout';
+                        handleSignOut(); // POST /api/logout
                       }}
                     >
                       Sign Out

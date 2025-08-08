@@ -1,7 +1,10 @@
 ﻿import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { setupAuth } from "./auth";             // ← ADD THIS
+import { setupAuth } from "./auth";
+// ...
+setupAuth(app);
+const server = await registerRoutes(app);
 
 const app = express();
 app.use(express.json());
