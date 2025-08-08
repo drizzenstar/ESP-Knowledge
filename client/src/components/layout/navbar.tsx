@@ -16,13 +16,14 @@ export default function Navbar() {
 // above return()
 async function handleSignOut() {
   try {
-    await apiRequest("POST", "/api/logout");
-  } catch (_) {
-    // ignore – we’ll still kick the user back to login
+    await apiRequest("POST", "/api/logout");  // <-- POST, not GET
+  } catch {
+    // ignore; we’ll still kick back to landing
   } finally {
-    window.location.href = "/"; // hard reload so session state resets
+    window.location.href = "/";               // go to home, NOT /api/logout
   }
 }
+
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 fixed w-full top-0 z-40">
@@ -56,7 +57,7 @@ async function handleSignOut() {
   className="w-full justify-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
   onClick={() => {
     setShowUserMenu(false);
-    handleSignOut();              // ? use POST logout
+    handleSignOut();
   }}
 >
   Sign Out
