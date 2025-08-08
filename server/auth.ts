@@ -208,3 +208,6 @@ export function isAuthenticated(req: any, res: any, next: any) {
   if (req.isAuthenticated()) return next();
   res.status(401).json({ message: "Unauthorized" });
 }
+app.get("/api/logout", (req, res, next) => {
+  req.logout((err) => (err ? next(err) : res.sendStatus(200)));
+});
