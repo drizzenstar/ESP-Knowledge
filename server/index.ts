@@ -1,23 +1,15 @@
 ﻿import express, { type Request, Response, NextFunction } from "express";
+import { setupAuth } from "./auth";         // named import ✅
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { setupAuth } from "./auth";
-// ...
-setupAuth(app);
-const server = await registerRoutes(app);
 
-const app = express();
+const app = express();                      // create the app ✅
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// … your request logging middleware …
-
 (async () => {
-  // mount passport/session + auth routes
-  setupAuth(app);                               // ← AND THIS
-
-  // register API routes (files upload, etc.)
-  const server = await registerRoutes(app);
+  setupAuth(app);                           // pass the app ✅
+  const server = await registerRoutes(app); // pass the app ✅
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -26,17 +18,12 @@ app.use(express.urlencoded({ extended: false }));
     throw err;
   });
 
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+  if (app.get("env") === "development") await setupVite(app, server);
+  else serveStatic(app);
 
   const port = parseInt(process.env.PORT || "5000", 10);
   const listenOpts: any = { port, host: "0.0.0.0" };
   if (process.platform !== "win32") listenOpts.reusePort = true;
 
-  server.listen(listenOpts, () => {
-    log(`serving on port ${port}`);
-  });
+  server.listen(listenOpts, () => log(`serving on port ${port}`));
 })();
