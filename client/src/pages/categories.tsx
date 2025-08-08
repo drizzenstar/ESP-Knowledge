@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient"; // note: no queryClient import here
 import Navbar from "@/components/layout/navbar";
 import Sidebar from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { Plus, Edit, Trash2, FolderOpen } from "lucide-react";
 export default function Categories() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const qc = useQueryClient();
+
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -37,14 +39,14 @@ export default function Categories() {
         title: "Success",
         description: "Category created successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      qc.invalidateQueries({ queryKey: ["/api/categories"] });
       setShowCreateDialog(false);
       resetForm();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to create category",
+        description: error?.message || "Failed to create category",
         variant: "destructive",
       });
     },
@@ -59,14 +61,14 @@ export default function Categories() {
         title: "Success",
         description: "Category updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      qc.invalidateQueries({ queryKey: ["/api/categories"] });
       setEditingCategory(null);
       resetForm();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update category",
+        description: error?.message || "Failed to update category",
         variant: "destructive",
       });
     },
@@ -81,12 +83,12 @@ export default function Categories() {
         title: "Success",
         description: "Category deleted successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      qc.invalidateQueries({ queryKey: ["/api/categories"] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete category",
+        description: error?.message || "Failed to delete category",
         variant: "destructive",
       });
     },
@@ -167,9 +169,9 @@ export default function Categories() {
                         <DialogTitle>
                           {editingCategory ? 'Edit Category' : 'Create New Category'}
                         </DialogTitle>
-			<DialogDescription>
-                       Give your category a name and optional description.
-                   </DialogDescription>
+                        <DialogDescription>
+                          Give your category a name and optional description.
+                        </DialogDescription>
                       </DialogHeader>
                       <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
