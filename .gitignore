@@ -4,6 +4,8 @@ dist/
 .cache/
 *.log
 .vscode/
+uploads/
+
 
 # env
 .env
