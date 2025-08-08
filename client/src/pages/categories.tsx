@@ -2,12 +2,12 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient"; // note: no queryClient import here
+import { apiRequest } from "@/lib/queryClient";
 import Navbar from "@/components/layout/navbar";
 import Sidebar from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, FolderOpen } from "lucide-react";
@@ -28,18 +28,25 @@ export default function Categories() {
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ["/api/categories"],
     retry: false,
+    // override global staleTime so invalidation actually refetches immediately
+    staleTime: 0,
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/categories", data);
     },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Category created successfully",
-      });
-      qc.invalidateQueries({ queryKey: ["/api/categories"] });
+    onSuccess: (created: any) => {
+      toast({ title: "Success", description: "Category created successfully" });
+
+      // 1) show it instantly
+      qc.setQueryData(["/api/categories"], (prev: any[] | undefined) =>
+        prev ? [created, ...prev] : [created]
+      );
+
+      // 2) then re-sync from the server
+      qc.refetchQueries({ queryKey: ["/api/categories"] });
+
       setShowCreateDialog(false);
       resetForm();
     },
@@ -56,12 +63,14 @@ export default function Categories() {
     mutationFn: async (data: any) => {
       return await apiRequest("PUT", `/api/categories/${editingCategory.id}`, data);
     },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Category updated successfully",
-      });
-      qc.invalidateQueries({ queryKey: ["/api/categories"] });
+    onSuccess: (updated: any) => {
+      toast({ title: "Success", description: "Category updated successfully" });
+
+      qc.setQueryData(["/api/categories"], (prev: any[] | undefined) =>
+        prev ? prev.map(c => (c.id === updated.id ? { ...c, ...updated } : c)) : prev
+      );
+      qc.refetchQueries({ queryKey: ["/api/categories"] });
+
       setEditingCategory(null);
       resetForm();
     },
@@ -78,12 +87,13 @@ export default function Categories() {
     mutationFn: async (id: string) => {
       return await apiRequest("DELETE", `/api/categories/${id}`, {});
     },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Category deleted successfully",
-      });
-      qc.invalidateQueries({ queryKey: ["/api/categories"] });
+    onSuccess: (_data, id) => {
+      toast({ title: "Success", description: "Category deleted successfully" });
+
+      qc.setQueryData(["/api/categories"], (prev: any[] | undefined) =>
+        prev ? prev.filter(c => c.id !== id) : prev
+      );
+      qc.refetchQueries({ queryKey: ["/api/categories"] });
     },
     onError: (error: any) => {
       toast({
@@ -95,11 +105,7 @@ export default function Categories() {
   });
 
   const resetForm = () => {
-    setFormData({
-      name: "",
-      description: "",
-      color: "#1976D2",
-    });
+    setFormData({ name: "", description: "", color: "#1976D2" });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -138,10 +144,8 @@ export default function Categories() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
       <div className="flex h-screen pt-16">
         <Sidebar />
-        
         <main className="flex-1 overflow-y-auto">
           <div className="p-6">
             <div className="mb-6">
@@ -150,14 +154,17 @@ export default function Categories() {
                   <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
                   <p className="text-gray-600">Organize your knowledge base content</p>
                 </div>
-                {user?.role === 'admin' && (
-                  <Dialog open={showCreateDialog || !!editingCategory} onOpenChange={(open) => {
-                    if (!open) {
-                      setShowCreateDialog(false);
-                      setEditingCategory(null);
-                      resetForm();
-                    }
-                  }}>
+                {user?.role === "admin" && (
+                  <Dialog
+                    open={showCreateDialog || !!editingCategory}
+                    onOpenChange={(open) => {
+                      if (!open) {
+                        setShowCreateDialog(false);
+                        setEditingCategory(null);
+                        resetForm();
+                      }
+                    }}
+                  >
                     <DialogTrigger asChild>
                       <Button onClick={() => setShowCreateDialog(true)}>
                         <Plus className="mr-2 h-4 w-4" />
@@ -167,7 +174,7 @@ export default function Categories() {
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>
-                          {editingCategory ? 'Edit Category' : 'Create New Category'}
+                          {editingCategory ? "Edit Category" : "Create New Category"}
                         </DialogTitle>
                         <DialogDescription>
                           Give your category a name and optional description.
@@ -222,7 +229,7 @@ export default function Categories() {
                             type="submit"
                             disabled={createMutation.isPending || updateMutation.isPending}
                           >
-                            {editingCategory ? 'Update' : 'Create'}
+                            {editingCategory ? "Update" : "Create"}
                           </Button>
                         </div>
                       </form>
@@ -252,7 +259,7 @@ export default function Categories() {
                 <CardContent className="p-6 text-center">
                   <FolderOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                   <p className="text-gray-500 mb-4">No categories found</p>
-                  {user?.role === 'admin' && (
+                  {user?.role === "admin" && (
                     <Button onClick={() => setShowCreateDialog(true)}>
                       Create your first category
                     </Button>
@@ -265,11 +272,11 @@ export default function Categories() {
                   <Card key={category.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between mb-4">
-                        <div 
+                        <div
                           className="w-4 h-4 rounded-full"
                           style={{ backgroundColor: category.color }}
                         />
-                        {user?.role === 'admin' && (
+                        {user?.role === "admin" && (
                           <div className="flex space-x-1">
                             <Button
                               variant="ghost"
