@@ -1,17 +1,31 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/layout/navbar";
 import Sidebar from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Filter } from "lucide-react";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+type Article = {
+  id: number;
+  title: string;
+  content: string;
+  categoryId: number | null;
+  authorId?: number | null;
+  createdAt?: string | null;
+  isPublished?: boolean;
+  version?: number | null;
+};
 
 export default function Articles() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -25,28 +39,50 @@ export default function Articles() {
     retry: false,
   });
 
-  const filteredArticles = articles.filter((article: any) =>
-    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // --- DELETE mutation ---
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/articles/${id}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Article deleted" });
+      queryClient.invalidateQueries({ queryKey: ["/api/articles"] });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Delete failed",
+        description: err?.message ?? "Unable to delete article.",
+        variant: "destructive",
+      });
+    },
+  });
 
-  const getCategoryName = (categoryId: string) => {
-    const category = categories.find((cat: any) => cat.id === categoryId);
-    return category?.name || 'Unknown';
+  const filteredArticles = (articles as Article[]).filter((article) => {
+    const t = (article.title ?? "").toLowerCase();
+    const c = (article.content ?? "").toLowerCase();
+    const q = searchQuery.toLowerCase();
+    return t.includes(q) || c.includes(q);
+  });
+
+  const getCategoryName = (categoryId: number | null) => {
+    if (categoryId == null) return "Uncategorized";
+    const category = categories.find((cat: any) => Number(cat.id) === Number(categoryId));
+    return category?.name || "Uncategorized";
   };
 
-  const getCategoryColor = (categoryId: string) => {
-    const category = categories.find((cat: any) => cat.id === categoryId);
-    return category?.color || '#1976D2';
+  const getCategoryColor = (categoryId: number | null) => {
+    if (categoryId == null) return "#1976D2";
+    const category = categories.find((cat: any) => Number(cat.id) === Number(categoryId));
+    return category?.color || "#1976D2";
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
+
       <div className="flex h-screen pt-16">
         <Sidebar />
-        
+
         <main className="flex-1 overflow-y-auto">
           <div className="p-6">
             <div className="mb-6">
@@ -55,7 +91,7 @@ export default function Articles() {
                   <h1 className="text-2xl font-bold text-gray-900">Articles</h1>
                   <p className="text-gray-600">Manage your knowledge base content</p>
                 </div>
-                <Button onClick={() => setLocation('/articles/new')}>
+                <Button onClick={() => setLocation("/articles/new")}>
                   <Plus className="mr-2 h-4 w-4" />
                   New Article
                 </Button>
@@ -106,20 +142,20 @@ export default function Articles() {
               <Card>
                 <CardContent className="p-6 text-center">
                   <p className="text-gray-500 mb-4">No articles found</p>
-                  <Button onClick={() => setLocation('/articles/new')}>
+                  <Button onClick={() => setLocation("/articles/new")}>
                     Create your first article
                   </Button>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid gap-6">
-                {filteredArticles.map((article: any) => (
+                {filteredArticles.map((article) => (
                   <Card key={article.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 
+                            <h3
                               className="text-lg font-semibold text-gray-900 hover:text-primary cursor-pointer"
                               onClick={() => setLocation(`/articles/${article.id}/edit`)}
                             >
@@ -130,20 +166,27 @@ export default function Articles() {
                             )}
                           </div>
                           <p className="text-gray-600 mb-3 line-clamp-2">
-                            {article.content.replace(/<[^>]*>/g, '').substring(0, 150)}...
+                            {(article.content ?? "")
+                              .replace(/<[^>]*>/g, "")
+                              .substring(0, 150)}
+                            …
                           </p>
                           <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <Badge 
-                              variant="outline" 
-                              style={{ 
+                            <Badge
+                              variant="outline"
+                              style={{
                                 borderColor: getCategoryColor(article.categoryId),
-                                color: getCategoryColor(article.categoryId)
+                                color: getCategoryColor(article.categoryId),
                               }}
                             >
                               {getCategoryName(article.categoryId)}
                             </Badge>
-                            <span>Version {article.version}</span>
-                            <span>{new Date(article.createdAt).toLocaleDateString()}</span>
+                            <span>Version {article.version ?? 1}</span>
+                            <span>
+                              {article.createdAt
+                                ? new Date(article.createdAt).toLocaleDateString()
+                                : ""}
+                            </span>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -154,8 +197,20 @@ export default function Articles() {
                           >
                             Edit
                           </Button>
-                          {(user?.role === 'admin' || article.authorId === user?.id) && (
-                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                          {(user?.role === "admin" || article.authorId === user?.id) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                              disabled={deleteMutation.isPending}
+                              onClick={() => {
+                                if (
+                                  window.confirm("Delete this article? This cannot be undone.")
+                                ) {
+                                  deleteMutation.mutate(article.id);
+                                }
+                              }}
+                            >
                               Delete
                             </Button>
                           )}

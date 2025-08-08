@@ -179,6 +179,83 @@ app.post("/api/articles", isAuthenticated, async (req, res, next) => {
     next(e);
   }
 });
+// ---- Article by-id: read, update, delete ----
+
+function canEditArticle(user: any, row: any) {
+  return user?.role === "admin" || row?.authorId === user?.id;
+}
+
+// GET one article
+app.get("/api/articles/:id", isAuthenticated, async (req, res, next) => {
+  try {
+    const user = req.user as any;
+    const id = Number(req.params.id);
+
+    const [row] = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
+    if (!row) return res.status(404).json({ message: "Not found" });
+
+    // (Optional) gate read by permissions if you want
+    return res.json(row);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// UPDATE
+app.put("/api/articles/:id", isAuthenticated, async (req, res, next) => {
+  try {
+    const user = req.user as any;
+    const id = Number(req.params.id);
+    const { title, content, categoryId } = req.body;
+
+    const [current] = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
+    if (!current) return res.status(404).json({ message: "Not found" });
+    if (!canEditArticle(user, current)) return res.status(403).json({ message: "Forbidden" });
+
+    const [updated] = await db
+      .update(articles)
+      .set({
+        title,
+        content,
+        categoryId: categoryId ? Number(categoryId) : null,
+      })
+      .where(eq(articles.id, id))
+      .returning();
+
+    res.json(updated);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// DELETE
+app.delete("/api/articles/:id", isAuthenticated, async (req, res, next) => {
+  try {
+    const user = req.user as any;
+    const id = Number(req.params.id);
+
+    const [current] = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
+    if (!current) return res.status(404).json({ message: "Not found" });
+    if (!canEditArticle(user, current)) return res.status(403).json({ message: "Forbidden" });
+
+    await db.delete(articles).where(eq(articles.id, id));
+    res.sendStatus(204);
+  } catch (e) {
+    next(e);
+  }
+});
+// after your categories join
+const flattenedCats = rows.map((r: any) => r.categories ?? r);
+const seenCats = new Set<number>();
+const uniqueCats = flattenedCats.filter((c: any) => !seenCats.has(c.id) && seenCats.add(c.id));
+res.json(uniqueCats);
+
+// after your articles join
+const flattenedArts = rows.map((r: any) => r.articles ?? r);
+const seenArts = new Set<number>();
+const uniqueArts = flattenedArts.filter((a: any) => !seenArts.has(a.id) && seenArts.add(a.id));
+res.json(uniqueArts);
+
 
   // ---------- Create HTTP server ----------
   const server: Server = createServer(app);

@@ -1,131 +1,174 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
+import { useLocation, useRoute } from "wouter";
+
+import Navbar from "@/components/layout/navbar";
+import Sidebar from "@/components/layout/sidebar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useLocation, useParams } from "wouter";
-import Navbar from "@/components/layout/navbar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import RichTextEditor from "@/components/ui/rich-text-editor";
-import FileUploadZone from "@/components/ui/file-upload-zone";
+import { isUnauthorizedError } from "@/lib/authUtils";
+
+type Article = {
+  id: number;
+  title: string;
+  content: string;
+  categoryId: number | null;
+  authorId?: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
 
 export default function ArticleEditor() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { id } = useParams();
-  const isEditing = Boolean(id);
 
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [tags, setTags] = useState("");
-  const [isPublished, setIsPublished] = useState(false);
+  // Matches /articles/:id/edit (edit mode) OR /articles/new (create mode)
+  const [isEditRoute, params] = useRoute<{ id: string }>("/articles/:id/edit");
+  const isEdit = Boolean(isEditRoute && params?.id);
+  const articleId = isEdit ? Number(params!.id) : null;
 
-  const { data: article, isLoading: articleLoading } = useQuery({
-    queryKey: ["/api/articles", id],
-    enabled: isEditing,
-    retry: false,
-  });
-
+  // Load categories for the dropdown (respects your server’s permission logic)
   const { data: categories = [] } = useQuery({
     queryKey: ["/api/categories"],
     retry: false,
   });
 
-  // Load article data when editing
+  // Load article when editing
+  const {
+    data: existingArticle,
+    isLoading: loadingArticle,
+    error: loadErr,
+  } = useQuery<Article>({
+    queryKey: ["/api/articles", articleId],
+    enabled: isEdit && !!articleId,
+    retry: false,
+  });
+
+  // Local form state
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [categoryId, setCategoryId] = useState<string>("");
+
+  // Initialize fields when article loads
   useEffect(() => {
-    if (article) {
-      setTitle(article.title || "");
-      setContent(article.content || "");
-      setCategoryId(article.categoryId || "");
-      setTags(article.tags?.join(", ") || "");
-      setIsPublished(article.isPublished || false);
+    if (existingArticle) {
+      setTitle(existingArticle.title ?? "");
+      setContent(existingArticle.content ?? "");
+      setCategoryId(
+        existingArticle.categoryId != null
+          ? String(existingArticle.categoryId)
+          : ""
+      );
     }
-  }, [article]);
+  }, [existingArticle]);
 
-  const createMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/articles", data);
+  // Create / Update mutations
+  const upsertMutation = useMutation({
+    mutationFn: async () => {
+      const body = {
+        title,
+        content,
+        categoryId: categoryId ? Number(categoryId) : null,
+      };
+
+      if (isEdit && articleId) {
+        const res = await apiRequest("PUT", `/api/articles/${articleId}`, body);
+        return await res.json();
+      } else {
+        const res = await apiRequest("POST", "/api/articles", body);
+        return await res.json();
+      }
     },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Article created successfully",
-      });
+    onSuccess: (data: Article) => {
+      // Refresh lists and detail
       queryClient.invalidateQueries({ queryKey: ["/api/articles"] });
-      setLocation('/articles');
-    },
-    onError: (error) => {
+      if (isEdit) {
+        queryClient.setQueryData(["/api/articles", articleId], data);
+      }
       toast({
-        title: "Error",
-        description: error.message || "Failed to create article",
+        title: isEdit ? "Article updated" : "Article created",
+        description: isEdit
+          ? "Your changes have been saved."
+          : "Your article has been created.",
+      });
+      setLocation("/articles");
+    },
+    onError: (err: any) => {
+      if (isUnauthorizedError(err)) {
+        toast({
+          title: "Session expired",
+          description: "Please sign in again.",
+          variant: "destructive",
+        });
+        setTimeout(() => (window.location.href = "/auth"), 500);
+        return;
+      }
+      toast({
+        title: "Save failed",
+        description: err?.message ?? "Unable to save article.",
         variant: "destructive",
       });
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("PUT", `/api/articles/${id}`, data);
+  // Delete
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!articleId) return;
+      await apiRequest("DELETE", `/api/articles/${articleId}`);
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Article updated successfully",
-      });
       queryClient.invalidateQueries({ queryKey: ["/api/articles"] });
-      setLocation('/articles');
+      toast({ title: "Article deleted" });
+      setLocation("/articles");
     },
-    onError: (error) => {
+    onError: (err: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update article",
+        title: "Delete failed",
+        description: err?.message ?? "Unable to delete article.",
         variant: "destructive",
       });
     },
   });
 
-  const handleSave = (publish = false) => {
-    if (!title.trim() || !content.trim() || !categoryId) {
+  const canSubmit = useMemo(() => title.trim().length > 0, [title]);
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
+        title: "Validation",
+        description: "Title is required.",
         variant: "destructive",
       });
       return;
     }
-
-    const articleData = {
-      title: title.trim(),
-      content: content.trim(),
-      categoryId,
-      tags: tags ? tags.split(",").map(tag => tag.trim()).filter(Boolean) : [],
-      isPublished: publish || isPublished,
-    };
-
-    if (isEditing) {
-      updateMutation.mutate(articleData);
-    } else {
-      createMutation.mutate(articleData);
-    }
+    upsertMutation.mutate();
   };
 
-  const handleFileUpload = (files: any[]) => {
-    // Handle file uploads and attach to article
-    console.log("Files uploaded:", files);
-  };
-
-  if (isEditing && articleLoading) {
+  if (isEdit && loadingArticle) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading article...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div>Loading article…</div>
+      </div>
+    );
+  }
+
+  if (isEdit && loadErr) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-600">Failed to load article.</div>
       </div>
     );
   }
@@ -133,104 +176,103 @@ export default function ArticleEditor() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
-      <div className="pt-16">
-        <main className="max-w-4xl mx-auto p-6">
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
+      <div className="flex h-screen pt-16">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            <div className="mb-6 flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {isEditing ? 'Edit Article' : 'Create New Article'}
+                  {isEdit ? "Edit Article" : "New Article"}
                 </h1>
-                <p className="text-gray-600">Write and publish knowledge base content</p>
+                <p className="text-gray-600">
+                  {isEdit
+                    ? "Update the article content."
+                    : "Write a new knowledge base article."}
+                </p>
               </div>
-              <div className="flex space-x-3">
-                <Button 
-                  variant="outline"
-                  onClick={() => handleSave(false)}
-                  disabled={createMutation.isPending || updateMutation.isPending}
+              {isEdit && (
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Delete this article? This cannot be undone."
+                      )
+                    ) {
+                      deleteMutation.mutate();
+                    }
+                  }}
                 >
-                  Save Draft
+                  Delete
                 </Button>
-                <Button 
-                  onClick={() => handleSave(true)}
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                >
-                  {isEditing ? 'Update Article' : 'Publish Article'}
-                </Button>
-              </div>
+              )}
             </div>
+
+            <Card>
+              <CardContent className="p-6">
+                <form className="space-y-6" onSubmit={onSubmit}>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Title
+                    </label>
+                    <Input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Article title"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category
+                    </label>
+                    <Select
+                      value={categoryId}
+                      onValueChange={setCategoryId}
+                    >
+                      <SelectTrigger className="w-64">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Uncategorized</SelectItem>
+                        {categories.map((c: any) => (
+                          <SelectItem key={c.id} value={String(c.id)}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Content
+                    </label>
+                    <Textarea
+                      className="min-h-[240px]"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="Write your article content…"
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button type="submit" disabled={upsertMutation.isPending || !canSubmit}>
+                      {isEdit ? "Save changes" : "Create article"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setLocation("/articles")}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
           </div>
-
-          <Card>
-            <CardContent className="p-6 space-y-6">
-              {/* Article Title */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Article Title *
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Enter article title..."
-                  className="text-lg"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-
-              {/* Category and Tags */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category *
-                  </label>
-                  <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category: any) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tags
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Enter tags separated by commas..."
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Rich Text Editor */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Content *
-                </label>
-                <RichTextEditor
-                  value={content}
-                  onChange={setContent}
-                  placeholder="Start writing your article content here..."
-                />
-              </div>
-
-              {/* File Attachments */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Attachments
-                </label>
-                <FileUploadZone onFilesUploaded={handleFileUpload} />
-              </div>
-            </CardContent>
-          </Card>
         </main>
       </div>
     </div>
