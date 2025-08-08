@@ -1,0 +1,124 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "REPLACE_WITH_YOUR_APP_ID",
+  "packageName": "com.company.knowledgebase",
+  "developer": {
+    "name": "Your Company",
+    "websiteUrl": "https://your-ngrok-url.ngrok.io",
+    "privacyUrl": "https://your-ngrok-url.ngrok.io/privacy",
+    "termsOfUseUrl": "https://your-ngrok-url.ngrok.io/terms"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Knowledge Base",
+    "full": "Enterprise Knowledge Base Assistant"
+  },
+  "description": {
+    "short": "Access your organization's knowledge base",
+    "full": "Search and access articles, documents, and information from your organization's knowledge base directly in Microsoft Teams. Get instant answers and browse categories with intelligent search capabilities."
+  },
+  "accentColor": "#2563eb",
+  "bots": [
+    {
+      "botId": "REPLACE_WITH_YOUR_APP_ID",
+      "scopes": [
+        "personal",
+        "team",
+        "groupchat"
+      ],
+      "commandLists": [
+        {
+          "scopes": [
+            "personal",
+            "team",
+            "groupchat"
+          ],
+          "commands": [
+            {
+              "title": "search",
+              "description": "Search the knowledge base for articles and documents"
+            },
+            {
+              "title": "categories",
+              "description": "Browse knowledge base categories"
+            },
+            {
+              "title": "recent",
+              "description": "Show recently updated articles"
+            },
+            {
+              "title": "help",
+              "description": "Show available commands and usage"
+            }
+          ]
+        }
+      ],
+      "isNotificationOnly": false,
+      "supportsFiles": false
+    }
+  ],
+  "configurableTabs": [
+    {
+      "configurationUrl": "https://your-ngrok-url.ngrok.io/teams/config",
+      "canUpdateConfiguration": true,
+      "scopes": [
+        "team",
+        "groupchat"
+      ],
+      "context": [
+        "channelTab",
+        "privateChatTab",
+        "meetingChatTab",
+        "meetingDetailsTab"
+      ]
+    }
+  ],
+  "staticTabs": [
+    {
+      "entityId": "knowledge-base-personal",
+      "name": "Knowledge Base",
+      "contentUrl": "https://your-ngrok-url.ngrok.io/teams/personal",
+      "scopes": [
+        "personal"
+      ]
+    }
+  ],
+  "composeExtensions": [
+    {
+      "botId": "REPLACE_WITH_YOUR_APP_ID",
+      "commands": [
+        {
+          "id": "searchKnowledgeBase",
+          "type": "query",
+          "title": "Search Knowledge Base",
+          "description": "Search for articles and documents",
+          "context": ["compose", "commandBox"],
+          "parameters": [
+            {
+              "name": "searchQuery",
+              "title": "Search Query",
+              "description": "Enter keywords to search for",
+              "inputType": "text"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "your-ngrok-url.ngrok.io"
+  ],
+  "webApplicationInfo": {
+    "id": "REPLACE_WITH_YOUR_APP_ID",
+    "resource": "https://graph.microsoft.com/"
+  }
+}

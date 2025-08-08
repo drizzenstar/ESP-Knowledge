@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Base - Enterprise Knowledge Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1976D2',
+                        secondary: '#424242',
+                        accent: '#FFC107',
+                        success: '#4CAF50',
+                        warning: '#FF9800',
+                        error: '#F44336'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- @COMPONENT: AuthenticationWrapper -->
+    <div id="authWrapper" class="min-h-screen">
+        
+        <!-- Login Screen -->
+        <!-- @COMPONENT: LoginForm -->
+        <div id="loginScreen" class="hidden min-h-screen flex items-center justify-center bg-gradient-to-br from-primary to-blue-600">
+            <div class="max-w-md w-full mx-4">
+                <div class="bg-white rounded-lg shadow-xl p-8">
+                    <div class="text-center mb-8">
+                        <div class="w-16 h-16 bg-primary rounded-lg mx-auto mb-4 flex items-center justify-center">
+                            <i class="fas fa-book text-white text-2xl"></i>
+                        </div>
+                        <h1 class="text-2xl font-bold text-gray-900">Knowledge Base</h1>
+                        <p class="text-gray-600 mt-2">Enterprise Knowledge Management</p>
+                    </div>
+                    
+                    <form class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                            <input type="email" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                   placeholder="Enter your email">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input type="password" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                   placeholder="Enter your password">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center">
+                                <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary">
+                                <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                            </label>
+                            <a href="#" class="text-sm text-primary hover:underline">Forgot password?</a>
+                        </div>
+                        <button type="submit" 
+                                class="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors"
+                                data-event="click:handleLogin">
+                            Sign In
+                        </button>
+                    </form>
+                    
+                    <div class="mt-6 text-center">
+                        <p class="text-sm text-gray-600">
+                            Don't have an account? 
+                            <a href="#" class="text-primary hover:underline">Contact your administrator</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: LoginForm -->
+
+        <!-- Main Application -->
+        <!-- @COMPONENT: MainApplication -->
+        <div id="mainApp" class="min-h-screen bg-gray-50">
+            
+            <!-- Top Navigation Bar -->
+            <!-- @COMPONENT: TopNavigation -->
+            <nav class="bg-white shadow-sm border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center h-16">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 flex items-center">
+                                <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-book text-white text-sm"></i>
+                                </div>
+                                <span class="ml-3 text-xl font-semibold text-gray-900">Knowledge Base</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Search Bar -->
+                        <div class="flex-1 max-w-lg mx-8">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                                <input type="text" 
+                                       class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary"
+                                       placeholder="Search articles, categories..."
+                                       data-implementation="Implement real-time search across articles and categories">
+                            </div>
+                        </div>
+                        
+                        <!-- User Menu -->
+                        <div class="flex items-center space-x-4">
+                            <button class="relative p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary rounded-full">
+                                <i class="fas fa-bell text-lg"></i>
+                                <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-error"></span>
+                            </button>
+                            
+                            <div class="relative">
+                                <button class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                                        data-event="click:toggleUserMenu">
+                                    <!-- Profile image placeholder -->
+                                    <img class="h-8 w-8 rounded-full object-cover" 
+                                         src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=32&h=32" 
+                                         alt="User profile" data-bind="user.avatar">
+                                    <span class="text-sm font-medium text-gray-700" data-bind="user.name">John Doe</span>
+                                    <span class="bg-primary text-white text-xs px-2 py-1 rounded-full" data-bind="user.role">Admin</span>
+                                    <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+                                </button>
+                                
+                                <!-- User Dropdown Menu -->
+                                <div class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                                    <div class="py-1">
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <i class="fas fa-user mr-2"></i>Profile Settings
+                                        </a>
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <i class="fas fa-key mr-2"></i>Change Password
+                                        </a>
+                                        <hr class="my-1">
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <i class="fas fa-sign-out-alt mr-2"></i>Sign Out
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+            <!-- @END_COMPONENT: TopNavigation -->
+
+            <div class="flex h-screen pt-16">
+                
+                <!-- Sidebar Navigation -->
+                <!-- @COMPONENT: SidebarNavigation -->
+                <aside class="w-64 bg-white shadow-sm border-r border-gray-200 overflow-y-auto">
+                    <div class="p-4">
+                        <nav class="space-y-2">
+                            <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-white bg-primary rounded-md">
+                                <i class="fas fa-home mr-3"></i>
+                                Dashboard
+                            </a>
+                            
+                            <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md">
+                                <i class="fas fa-folder mr-3"></i>
+                                Categories
+                            </a>
+                            
+                            <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md">
+                                <i class="fas fa-file-alt mr-3"></i>
+                                Articles
+                            </a>
+                            
+                            <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md">
+                                <i class="fas fa-cloud-upload-alt mr-3"></i>
+                                File Library
+                            </a>
+                            
+                            <!-- Admin Only Section -->
+                            <div class="pt-4 border-t border-gray-200" data-role="admin">
+                                <p class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Administration</p>
+                                <div class="mt-2 space-y-1">
+                                    <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md">
+                                        <i class="fas fa-users mr-3"></i>
+                                        User Management
+                                    </a>
+                                    <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md">
+                                        <i class="fas fa-shield-alt mr-3"></i>
+                                        Permissions
+                                    </a>
+                                    <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md">
+                                        <i class="fas fa-cog mr-3"></i>
+                                        System Settings
+                                    </a>
+                                </div>
+                            </div>
+                        </nav>
+                        
+                        <!-- Quick Stats -->
+                        <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+                            <h3 class="text-sm font-medium text-gray-900 mb-3">Quick Stats</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Total Articles</span>
+                                    <span class="font-medium" data-bind="stats.totalArticles">245</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Categories</span>
+                                    <span class="font-medium" data-bind="stats.totalCategories">12</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Active Users</span>
+                                    <span class="font-medium" data-bind="stats.activeUsers">18</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+                <!-- @END_COMPONENT: SidebarNavigation -->
+
+                <!-- Main Content Area -->
+                <!-- @COMPONENT: MainContent -->
+                <main class="flex-1 overflow-y-auto">
+                    
+                    <!-- Dashboard View -->
+                    <!-- @COMPONENT: DashboardView -->
+                    <div id="dashboardView" class="p-6">
+                        <div class="mb-6">
+                            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+                            <p class="text-gray-600">Welcome back! Here's what's happening in your knowledge base.</p>
+                        </div>
+
+                        <!-- Stats Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-file-alt text-white text-xl"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-600">Total Articles</p>
+                                        <p class="text-2xl font-bold text-gray-900" data-bind="stats.totalArticles">245</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-12 h-12 bg-success rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-folder text-white text-xl"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-600">Categories</p>
+                                        <p class="text-2xl font-bold text-gray-900" data-bind="stats.totalCategories">12</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-12 h-12 bg-accent rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-users text-white text-xl"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-600">Active Users</p>
+                                        <p class="text-2xl font-bold text-gray-900" data-bind="stats.activeUsers">18</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-12 h-12 bg-warning rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-cloud-upload-alt text-white text-xl"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-600">Uploaded Files</p>
+                                        <p class="text-2xl font-bold text-gray-900" data-bind="stats.totalFiles">89</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity and Quick Actions -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            
+                            <!-- Recent Articles -->
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                                <div class="p-6 border-b border-gray-200">
+                                    <div class="flex items-center justify-between">
+                                        <h2 class="text-lg font-semibold text-gray-900">Recent Articles</h2>
+                                        <button class="text-primary hover:text-blue-700 text-sm font-medium">View All</button>
+                                    </div>
+                                </div>
+                                <div class="p-6">
+                                    <!-- @MAP: recentArticles.map(article => ( -->
+                                    <div class="space-y-4">
+                                        <div class="flex items-start space-x-3">
+                                            <div class="w-2 h-2 bg-primary rounded-full mt-2"></div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-gray-900 truncate" data-bind="article.title">Getting Started with API Integration</p>
+                                                <div class="flex items-center space-x-2 mt-1">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800" data-bind="article.category">Development</span>
+                                                    <span class="text-xs text-gray-500" data-bind="article.created_at">2 hours ago</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex items-start space-x-3">
+                                            <div class="w-2 h-2 bg-success rounded-full mt-2"></div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-gray-900 truncate" data-bind="article.title">Database Backup Procedures</p>
+                                                <div class="flex items-center space-x-2 mt-1">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800" data-bind="article.category">Operations</span>
+                                                    <span class="text-xs text-gray-500" data-bind="article.created_at">5 hours ago</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex items-start space-x-3">
+                                            <div class="w-2 h-2 bg-accent rounded-full mt-2"></div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-gray-900 truncate" data-bind="article.title">Security Best Practices</p>
+                                                <div class="flex items-center space-x-2 mt-1">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800" data-bind="article.category">Security</span>
+                                                    <span class="text-xs text-gray-500" data-bind="article.created_at">1 day ago</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- @END_MAP )) -->
+                                </div>
+                            </div>
+
+                            <!-- Quick Actions -->
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                                <div class="p-6 border-b border-gray-200">
+                                    <h2 class="text-lg font-semibold text-gray-900">Quick Actions</h2>
+                                </div>
+                                <div class="p-6">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <button class="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-blue-50 transition-colors group"
+                                                data-event="click:createNewArticle">
+                                            <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition-colors">
+                                                <i class="fas fa-plus text-white text-xl"></i>
+                                            </div>
+                                            <span class="mt-2 text-sm font-medium text-gray-900">New Article</span>
+                                        </button>
+                                        
+                                        <button class="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-success hover:bg-green-50 transition-colors group"
+                                                data-event="click:uploadFile">
+                                            <div class="w-12 h-12 bg-success rounded-lg flex items-center justify-center group-hover:bg-green-700 transition-colors">
+                                                <i class="fas fa-cloud-upload-alt text-white text-xl"></i>
+                                            </div>
+                                            <span class="mt-2 text-sm font-medium text-gray-900">Upload File</span>
+                                        </button>
+                                        
+                                        <button class="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-accent hover:bg-yellow-50 transition-colors group"
+                                                data-event="click:createCategory">
+                                            <div class="w-12 h-12 bg-accent rounded-lg flex items-center justify-center group-hover:bg-yellow-600 transition-colors">
+                                                <i class="fas fa-folder-plus text-white text-xl"></i>
+                                            </div>
+                                            <span class="mt-2 text-sm font-medium text-gray-900">New Category</span>
+                                        </button>
+                                        
+                                        <button class="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors group"
+                                                data-event="click:manageUsers" data-role="admin">
+                                            <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center group-hover:bg-purple-700 transition-colors">
+                                                <i class="fas fa-users-cog text-white text-xl"></i>
+                                            </div>
+                                            <span class="mt-2 text-sm font-medium text-gray-900">Manage Users</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_COMPONENT: DashboardView -->
+
+                    <!-- Article Creation/Editing View -->
+                    <!-- @COMPONENT: ArticleEditor -->
+                    <div id="articleEditor" class="hidden p-6">
+                        <div class="max-w-4xl mx-auto">
+                            <div class="mb-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h1 class="text-2xl font-bold text-gray-900">Create New Article</h1>
+                                        <p class="text-gray-600">Write and publish knowledge base content</p>
+                                    </div>
+                                    <div class="flex space-x-3">
+                                        <button class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary"
+                                                data-event="click:saveDraft">
+                                            Save Draft
+                                        </button>
+                                        <button class="px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                                data-event="click:publishArticle">
+                                            Publish Article
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                                <div class="p-6">
+                                    <div class="space-y-6">
+                                        <!-- Article Title -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Article Title</label>
+                                            <input type="text" 
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-lg"
+                                                   placeholder="Enter article title..."
+                                                   data-bind="article.title">
+                                        </div>
+
+                                        <!-- Category and Tags -->
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                                        data-bind="article.category_id">
+                                                    <option value="">Select a category</option>
+                                                    <option value="1">Development</option>
+                                                    <option value="2">Operations</option>
+                                                    <option value="3">Security</option>
+                                                    <option value="4">User Guides</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                                                <input type="text" 
+                                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                                       placeholder="Enter tags separated by commas..."
+                                                       data-bind="article.tags">
+                                            </div>
+                                        </div>
+
+                                        <!-- Rich Text Editor Area -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                                            
+                                            <!-- Editor Toolbar -->
+                                            <div class="border border-gray-300 rounded-t-md bg-gray-50 p-2 flex flex-wrap items-center space-x-1">
+                                                <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-transparent hover:border-gray-300">
+                                                    <i class="fas fa-bold"></i>
+                                                </button>
+                                                <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-transparent hover:border-gray-300">
+                                                    <i class="fas fa-italic"></i>
+                                                </button>
+                                                <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-transparent hover:border-gray-300">
+                                                    <i class="fas fa-underline"></i>
+                                                </button>
+                                                <div class="w-px h-6 bg-gray-300 mx-2"></div>
+                                                <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-transparent hover:border-gray-300">
+                                                    <i class="fas fa-list-ul"></i>
+                                                </button>
+                                                <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-transparent hover:border-gray-300">
+                                                    <i class="fas fa-list-ol"></i>
+                                                </button>
+                                                <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-transparent hover:border-gray-300">
+                                                    <i class="fas fa-link"></i>
+                                                </button>
+                                                <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-transparent hover:border-gray-300">
+                                                    <i class="fas fa-image"></i>
+                                                </button>
+                                                <div class="w-px h-6 bg-gray-300 mx-2"></div>
+                                                <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-transparent hover:border-gray-300"
+                                                        data-event="click:insertCodeBlock">
+                                                    <i class="fas fa-code"></i>
+                                                </button>
+                                                <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-transparent hover:border-gray-300">
+                                                    <i class="fas fa-table"></i>
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Editor Content Area -->
+                                            <div class="border-l border-r border-b border-gray-300 rounded-b-md bg-white min-h-96 p-4 focus-within:ring-2 focus-within:ring-primary"
+                                                 contenteditable="true"
+                                                 data-implementation="Replace with Quill.js or similar rich text editor"
+                                                 data-bind="article.content">
+                                                <p class="text-gray-500 italic">Start writing your article content here...</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- File Attachments -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
+                                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
+                                                <div class="space-y-2">
+                                                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400"></i>
+                                                    <div>
+                                                        <p class="text-sm text-gray-600">Drop files here or</p>
+                                                        <button class="text-primary hover:text-blue-700 font-medium text-sm"
+                                                                data-event="click:openFileUpload">
+                                                            browse to upload
+                                                        </button>
+                                                    </div>
+                                                    <p class="text-xs text-gray-500">Supports PDF, DOC, DOCX, images (max 10MB)</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_COMPONENT: ArticleEditor -->
+
+                    <!-- File Library View -->
+                    <!-- @COMPONENT: FileLibrary -->
+                    <div id="fileLibrary" class="hidden p-6">
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h1 class="text-2xl font-bold text-gray-900">File Library</h1>
+                                    <p class="text-gray-600">Manage uploaded documents and media files</p>
+                                </div>
+                                <button class="flex items-center px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                        data-event="click:uploadNewFile">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Upload Files
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Filter and Search -->
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+                            <div class="flex flex-wrap items-center gap-4">
+                                <div class="flex-1 min-w-64">
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <i class="fas fa-search text-gray-400"></i>
+                                        </div>
+                                        <input type="text" 
+                                               class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary"
+                                               placeholder="Search files..."
+                                               data-implementation="Filter files by name and type">
+                                    </div>
+                                </div>
+                                <select class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                                    <option value="">All File Types</option>
+                                    <option value="pdf">PDF Documents</option>
+                                    <option value="doc">Word Documents</option>
+                                    <option value="image">Images</option>
+                                    <option value="video">Videos</option>
+                                </select>
+                                <select class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                                    <option value="">All Categories</option>
+                                    <option value="development">Development</option>
+                                    <option value="operations">Operations</option>
+                                    <option value="security">Security</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- File Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            <!-- @MAP: files.map(file => ( -->
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                                <div class="p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-file-pdf text-red-600"></i>
+                                        </div>
+                                        <div class="relative">
+                                            <button class="p-1 text-gray-400 hover:text-gray-600"
+                                                    data-event="click:showFileMenu">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <h3 class="text-sm font-medium text-gray-900 truncate mb-1" data-bind="file.name">API Documentation.pdf</h3>
+                                    <p class="text-xs text-gray-500 mb-2" data-bind="file.size">2.4 MB</p>
+                                    <div class="flex items-center justify-between text-xs text-gray-500">
+                                        <span data-bind="file.uploaded_at">2 days ago</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800" data-bind="file.category">Development</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                                <div class="p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-file-excel text-green-600"></i>
+                                        </div>
+                                        <div class="relative">
+                                            <button class="p-1 text-gray-400 hover:text-gray-600">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <h3 class="text-sm font-medium text-gray-900 truncate mb-1">User Analytics.xlsx</h3>
+                                    <p class="text-xs text-gray-500 mb-2">1.8 MB</p>
+                                    <div class="flex items-center justify-between text-xs text-gray-500">
+                                        <span>5 days ago</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Operations</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                                <div class="p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-image text-purple-600"></i>
+                                        </div>
+                                        <div class="relative">
+                                            <button class="p-1 text-gray-400 hover:text-gray-600">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <h3 class="text-sm font-medium text-gray-900 truncate mb-1">System Architecture.png</h3>
+                                    <p class="text-xs text-gray-500 mb-2">3.2 MB</p>
+                                    <div class="flex items-center justify-between text-xs text-gray-500">
+                                        <span>1 week ago</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">Architecture</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                    <!-- @END_COMPONENT: FileLibrary -->
+
+                    <!-- User Management View (Admin Only) -->
+                    <!-- @COMPONENT: UserManagement -->
+                    <div id="userManagement" class="hidden p-6" data-role="admin">
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h1 class="text-2xl font-bold text-gray-900">User Management</h1>
+                                    <p class="text-gray-600">Manage user accounts and permissions</p>
+                                </div>
+                                <button class="flex items-center px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                        data-event="click:inviteUser">
+                                    <i class="fas fa-user-plus mr-2"></i>
+                                    Invite User
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Users Table -->
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categories Access</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <!-- @MAP: users.map(user => ( -->
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <img class="h-10 w-10 rounded-full object-cover" 
+                                                         src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40" 
+                                                         alt="User avatar" data-bind="user.avatar">
+                                                    <div class="ml-4">
+                                                        <div class="text-sm font-medium text-gray-900" data-bind="user.name">John Doe</div>
+                                                        <div class="text-sm text-gray-500" data-bind="user.email">john.doe@company.com</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-white" data-bind="user.role">Admin</span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <div class="flex flex-wrap gap-1">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Development</span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Operations</span>
+                                                    <span class="text-xs text-gray-400">+2 more</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-bind="user.last_login">2 hours ago</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <div class="flex space-x-2">
+                                                    <button class="text-primary hover:text-blue-700"
+                                                            data-event="click:editUser">Edit</button>
+                                                    <button class="text-gray-400 hover:text-gray-600"
+                                                            data-event="click:managePermissions">Permissions</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <img class="h-10 w-10 rounded-full object-cover" 
+                                                         src="https://pixabay.com/get/g915c484074904fd5a32ffffbeff113e29a03785a78e25a12b0e2f35060b2d07174613e3aa1fecfa90b9fc82202f12afb16c88b4e0f508c3851ef27ad08793330_1280.jpg" 
+                                                         alt="User avatar">
+                                                    <div class="ml-4">
+                                                        <div class="text-sm font-medium text-gray-900">Sarah Wilson</div>
+                                                        <div class="text-sm text-gray-500">sarah.wilson@company.com</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">User</span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <div class="flex flex-wrap gap-1">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Operations</span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Security</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Yesterday</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <div class="flex space-x-2">
+                                                    <button class="text-primary hover:text-blue-700">Edit</button>
+                                                    <button class="text-gray-400 hover:text-gray-600">Permissions</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <!-- @END_MAP )) -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_COMPONENT: UserManagement -->
+
+                </main>
+                <!-- @END_COMPONENT: MainContent -->
+            </div>
+
+        </div>
+        <!-- @END_COMPONENT: MainApplication -->
+
+    </div>
+    <!-- @END_COMPONENT: AuthenticationWrapper -->
+
+    <!-- File Upload Modal -->
+    <!-- @COMPONENT: FileUploadModal -->
+    <div id="fileUploadModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Upload Files</h3>
+                    <button class="text-gray-400 hover:text-gray-600"
+                            data-event="click:closeUploadModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-sm text-gray-600 mb-2">Drop files here or click to browse</p>
+                    <button class="text-primary hover:text-blue-700 font-medium text-sm"
+                            data-implementation="Use ObjectUploader component for file selection">
+                        Choose Files
+                    </button>
+                    <p class="text-xs text-gray-500 mt-2">Supports PDF, DOC, DOCX, images, videos (max 10MB each)</p>
+                </div>
+
+                <!-- Upload Progress (hidden by default) -->
+                <div class="hidden mt-4" id="uploadProgress">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600">document.pdf</span>
+                            <span class="text-gray-400">75%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 75%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                            data-event="click:closeUploadModal">
+                        Cancel
+                    </button>
+                    <button class="px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                            data-event="click:startUpload">
+                        Upload
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: FileUploadModal -->
+
+    <script>
+        (function() {
+            // TODO: Implement proper authentication, role-based routing, and state management
+            // TODO: Replace with actual API calls and data binding
+            // TODO: Implement rich text editor (Quill.js or similar)
+            // TODO: Add file upload functionality using ObjectUploader component
+            // TODO: Implement search functionality across articles and categories
+            // TODO: Add Microsoft Teams integration
+            
+            // Mock navigation functionality for demo purposes
+            const navLinks = document.querySelectorAll('aside a, .quick-action');
+            const views = {
+                'Dashboard': 'dashboardView',
+                'Articles': 'articleEditor',
+                'File Library': 'fileLibrary',
+                'User Management': 'userManagement'
+            };
+
+            // Simple view switching for demonstration
+            function showView(viewId) {
+                // Hide all views
+                Object.values(views).forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) element.classList.add('hidden');
+                });
+                
+                // Show selected view
+                const targetView = document.getElementById(viewId);
+                if (targetView) targetView.classList.remove('hidden');
+            }
+
+            // Mock user menu toggle
+            const userMenuButton = document.querySelector('[data-event="click:toggleUserMenu"]');
+            const userMenuDropdown = userMenuButton?.nextElementSibling;
+            
+            if (userMenuButton && userMenuDropdown) {
+                userMenuButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userMenuDropdown.classList.toggle('hidden');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function() {
+                    userMenuDropdown.classList.add('hidden');
+                });
+            }
+
+            // Mock file upload modal
+            const uploadButton = document.querySelector('[data-event="click:uploadFile"]');
+            const uploadModal = document.getElementById('fileUploadModal');
+            const closeModalButtons = document.querySelectorAll('[data-event="click:closeUploadModal"]');
+
+            if (uploadButton && uploadModal) {
+                uploadButton.addEventListener('click', function() {
+                    uploadModal.classList.remove('hidden');
+                });
+            }
+
+            closeModalButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    uploadModal.classList.add('hidden');
+                });
+            });
+
+            // Show dashboard by default
+            showView('dashboardView');
+        })();
+    </script>
+</body>
+</html>

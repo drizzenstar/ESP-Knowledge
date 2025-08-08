@@ -1,0 +1,72 @@
+Create a comprehensive knowledge base application with role-based access control, file upload capabilities, Microsoft Teams integration, and local server hosting using ngrok with PostgreSQL database.
+Core Features Required
+1. User Authentication & Authorization
+•	Implement user registration and login system using Replit Auth
+•	Create role-based access control with two main roles:
+•	Admin: Full access to create users, manage permissions, create/edit all content
+•	User: Can read assigned categories, change password, upload content (if permitted)
+•	Password reset functionality using Replit's built-in password reset system
+•	User profile management with password change capability
+2. Knowledge Base Management
+•	Create, edit, delete knowledge articles with rich text editing
+•	Category-based organization system
+•	Search functionality across articles and categories
+•	Article versioning and history tracking
+•	Tag system for better content organization
+3. Permission System
+•	Category-level permissions (read/write access)
+•	Admin can assign users to specific categories with different permission levels
+•	Users can only access categories they've been granted permission for
+•	Permission types: Read Only, Read/Write, No Access
+4. File & Media Management
+•	Document upload support (PDF, DOC, DOCX, TXT)
+•	Video upload and embedding capability
+•	File storage using Replit Object Storage
+•	File size limits and type validation
+•	Media gallery for uploaded files
+5. Microsoft Teams Integration
+•	Create Microsoft Teams bot or tab integration
+•	Allow knowledge base access within Teams interface
+•	Notifications for new articles or updates
+•	Search functionality within Teams
+•	Single sign-on (SSO) with Microsoft accounts
+6. Brand Customization
+•	Implement brand color scheme throughout the application
+•	Customizable UI themes
+•	Logo and branding elements
+•	Responsive design for different screen sizes
+7. Database & Storage
+•	Use PostgreSQL as the primary database
+•	Database schema should include:
+•	Users table (id, email, password_hash, role, created_at, updated_at)
+•	Categories table (id, name, description, created_by, created_at)
+•	Articles table (id, title, content, category_id, author_id, created_at, updated_at)
+•	Permissions table (id, user_id, category_id, permission_type)
+•	Files table (id, filename, file_path, file_type, uploaded_by, article_id, uploaded_at)
+•	Implement proper database relationships and constraints
+8. Local Hosting & Deployment
+•	Configure application to run on local Windows server
+•	Set up ngrok for tunneling local server to public URL
+•	Environment configuration for local development
+•	Database connection configuration for local PostgreSQL instance
+Technical Implementation Details
+Frontend Framework
+•	Use HTML, CSS, and JavaScript with a modern framework (React, Vue, or vanilla JS with Tailwind CSS)
+•	Responsive design for mobile and desktop
+•	Rich text editor for article creation (Quill.js or similar)
+•	File upload interface with drag-and-drop support
+Backend Requirements
+•	Node.js/Express server or Python Flask/FastAPI
+•	RESTful API design
+•	Authentication middleware
+•	File upload handling
+•	Database connection pooling
+•	Error handling and logging
+Security Considerations
+•	Input validation and sanitization
+•	SQL injection prevention
+•	File upload security (type validation, size limits)
+•	Secure password hashing
+•	Session management
+•	CORS configuration for Teams integration
+
