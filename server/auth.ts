@@ -91,7 +91,7 @@ async function createDefaultUsers() {
 
 /* ───────── Auth wiring ───────── */
 
-export function setupAuth(app: Express) {
+export function setupAuth(app: Express) { 
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const PgStore = connectPg(session);
 

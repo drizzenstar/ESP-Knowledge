@@ -1,15 +1,16 @@
 ﻿import express, { type Request, Response, NextFunction } from "express";
-import { setupAuth } from "./auth";         // named import ✅
+import { setupAuth } from "./auth";           // ← named import
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
-const app = express();                      // create the app ✅
+const app = express();                        // ← create app FIRST
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 (async () => {
-  setupAuth(app);                           // pass the app ✅
-  const server = await registerRoutes(app); // pass the app ✅
+  console.log("calling setupAuth with app:", !!app);
+  setupAuth(app);                             // ← pass app
+  const server = await registerRoutes(app);   // ← pass app
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
