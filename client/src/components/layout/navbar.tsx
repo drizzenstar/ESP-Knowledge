@@ -6,11 +6,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, Bell, BookOpen, ChevronDown } from "lucide-react";
 import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Navbar() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+// above return()
+async function handleSignOut() {
+  try {
+    await apiRequest("POST", "/api/logout");
+  } catch (_) {
+    // ignore – we’ll still kick the user back to login
+  } finally {
+    window.location.href = "/"; // hard reload so session state resets
+  }
+}
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 fixed w-full top-0 z-40">
@@ -39,11 +51,16 @@ export default function Navbar() {
           
           {/* User Menu */}
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-error"></span>
-            </Button>
-            
+            <Button
+  variant="ghost"
+  className="w-full justify-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+  onClick={() => {
+    setShowUserMenu(false);
+    handleSignOut();              // ? use POST logout
+  }}
+>
+  Sign Out
+</Button>            
             <div className="relative">
               <Button
                 variant="ghost"
