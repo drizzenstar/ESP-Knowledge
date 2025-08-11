@@ -1,3 +1,4 @@
+// server/routes.ts
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
@@ -6,7 +7,6 @@ import path from "path";
 import { storage } from "./storage";
 import { isAuthenticated } from "./auth";
 
-// ?? direct DB access for categories/permissions
 import { db } from "./db";
 import { categories, permissions, articles } from "@shared/schema";
 import { eq, or } from "drizzle-orm";
@@ -30,7 +30,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Accepts multiple files (field name "files") or a single file ("file")
   app.post(
     "/api/files/upload",
     isAuthenticated,
@@ -53,7 +52,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fileType: f.mimetype,
             fileSize: f.size,
             uploadedBy: (req.user as any)?.id ?? null,
-            // categoryId: req.body.categoryId ? Number(req.body.categoryId) : null,
           });
           created.push(rec);
         }
@@ -66,36 +64,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // ---------- Categories ----------
+  // LIST: admin -> all; user -> created_by=user OR has permission
+  app.get("/api/categories", isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user as any;
 
-  // LIST: admin ? all; user ? created_by = user OR has permission
-  app.get("/api/categories", isAuthenticated, async (req, res, next) => {
-  try {
-    const user = req.user as any;
+      if (user?.role === "admin") {
+        const rows = await db.select().from(categories).orderBy(categories.id);
+        return res.json(rows);
+      }
 
-    if (user?.role === "admin") {
-      const rows = await db.select().from(categories).orderBy(categories.id);
-      return res.json(rows);
+      const rows = await db
+        .select()
+        .from(categories)
+        .leftJoin(permissions, eq(permissions.categoryId, categories.id))
+        .where(or(eq(categories.createdBy, user.id), eq(permissions.userId, user.id)))
+        .orderBy(categories.id);
+
+      // flatten + de-dupe
+      const flattened = rows.map((r: any) => r.categories ?? r);
+      const seen = new Set<number>();
+      const unique = flattened.filter((c: any) => {
+        if (seen.has(c.id)) return false;
+        seen.add(c.id);
+        return true;
+      });
+
+      return res.json(unique);
+    } catch (e) {
+      next(e);
     }
+  });
 
-    const rows = await db
-      .select()
-      .from(categories)
-      .leftJoin(permissions, eq(permissions.categoryId, categories.id))
-      .where(or(eq(categories.createdBy, user.id), eq(permissions.userId, user.id)))
-      .orderBy(categories.id);
-
-    // flatten + de-dupe
-    const flattened = rows.map((r: any) => r.categories ?? r);
-    const seen = new Set<number>();
-    const unique = flattened.filter((c: any) => !seen.has(c.id) && seen.add(c.id));
-
-    return res.json(unique);
-  } catch (e) {
-    next(e);
-  }
-});
-
-  // CREATE: records created_by and grants the creator write permission
+  // CREATE category: set created_by and grant writer permission to creator
   app.post("/api/categories", isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name, description, parentId } = req.body;
@@ -107,11 +108,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name,
           description: description ?? null,
           parentId: parentId ? Number(parentId) : null,
-          createdBy: userId, // ? make sure creator is set
+          createdBy: userId,
         })
         .returning();
 
-      // Make sure the creator can see/edit it on subsequent logins
       if (userId) {
         await db
           .insert(permissions)
@@ -132,136 +132,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // (add PUT/DELETE categories if needed later)
-// ---------- Articles ----------
+  // ---------- Articles ----------
+  // LIST: admin -> all; user -> authored OR has permission via category
+  app.get("/api/articles", isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user as any;
 
-// LIST: admin ? all; user ? authored OR has permission via category
-app.get("/api/articles", isAuthenticated, async (req, res, next) => {
-  try {
-    const user = req.user as any;
+      if (user?.role === "admin") {
+        const rows = await db.select().from(articles).orderBy(articles.id);
+        return res.json(rows);
+      }
 
-    if (user?.role === "admin") {
-      const rows = await db.select().from(articles).orderBy(articles.id);
-      return res.json(rows);
+      const rows = await db
+        .select()
+        .from(articles)
+        .leftJoin(permissions, eq(permissions.categoryId, articles.categoryId))
+        .where(or(eq(articles.authorId, user.id), eq(permissions.userId, user.id)))
+        .orderBy(articles.id);
+
+      // flatten + de-dupe
+      const flattened = rows.map((r: any) => r.articles ?? r);
+      const seen = new Set<number>();
+      const unique = flattened.filter((a: any) => {
+        if (seen.has(a.id)) return false;
+        seen.add(a.id);
+        return true;
+      });
+
+      return res.json(unique);
+    } catch (e) {
+      next(e);
     }
+  });
 
-    const rows = await db
-      .select()
-      .from(articles)
-      .leftJoin(permissions, eq(permissions.categoryId, articles.categoryId))
-      .where(or(eq(articles.authorId, user.id), eq(permissions.userId, user.id)))
-      .orderBy(articles.id);
+  // CREATE article: set authorId to current user
+  app.post("/api/articles", isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { title, content, categoryId } = req.body;
+      const userId = (req.user as any)?.id ?? null;
 
-    // flatten + de-dupe
-    const flattened = rows.map((r: any) => r.articles ?? r);
-    const seen = new Set<number>();
-    const unique = flattened.filter((a: any) => !seen.has(a.id) && seen.add(a.id));
+      const [art] = await db
+        .insert(articles)
+        .values({
+          title,
+          content,
+          categoryId: categoryId ? Number(categoryId) : null,
+          authorId: userId,
+        })
+        .returning();
 
-    return res.json(unique);
-  } catch (e) {
-    next(e);
-  }
-});
+      res.status(201).json(art);
+    } catch (e) {
+      next(e);
+    }
+  });
 
+  // GET article
+  app.get("/api/articles/:id", isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = Number(req.params.id);
+      const [row] = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
+      if (!row) return res.status(404).json({ message: "Not found" });
+      return res.json(row);
+    } catch (e) {
+      next(e);
+    }
+  });
 
-// CREATE: set authorId to the current user
-app.post("/api/articles", isAuthenticated, async (req, res, next) => {
-  try {
-    const { title, content, categoryId } = req.body;
-    const userId = (req.user as any)?.id ?? null;
+  // UPDATE article
+  app.put("/api/articles/:id", isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user as any;
+      const id = Number(req.params.id);
+      const { title, content, categoryId } = req.body;
 
-    const [art] = await db
-      .insert(articles)
-      .values({
-        title,
-        content,
-        categoryId: categoryId ? Number(categoryId) : null,
-        authorId: userId, // ? important so it shows for the creator
-      })
-      .returning();
+      const [current] = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
+      if (!current) return res.status(404).json({ message: "Not found" });
 
-    res.status(201).json(art);
-  } catch (e) {
-    next(e);
-  }
-});
-// ---- Article by-id: read, update, delete ----
+      // author or admin can edit
+      if (!(user?.role === "admin" || current.authorId === user?.id)) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
 
-function canEditArticle(user: any, row: any) {
-  return user?.role === "admin" || row?.authorId === user?.id;
-}
+      const [updated] = await db
+        .update(articles)
+        .set({
+          title,
+          content,
+          categoryId: categoryId ? Number(categoryId) : null,
+        })
+        .where(eq(articles.id, id))
+        .returning();
 
-// GET one article
-app.get("/api/articles/:id", isAuthenticated, async (req, res, next) => {
-  try {
-    const user = req.user as any;
-    const id = Number(req.params.id);
+      res.json(updated);
+    } catch (e) {
+      next(e);
+    }
+  });
 
-    const [row] = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
-    if (!row) return res.status(404).json({ message: "Not found" });
+  // DELETE article
+  app.delete("/api/articles/:id", isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user as any;
+      const id = Number(req.params.id);
 
-    // (Optional) gate read by permissions if you want
-    return res.json(row);
-  } catch (e) {
-    next(e);
-  }
-});
+      const [current] = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
+      if (!current) return res.status(404).json({ message: "Not found" });
 
-// UPDATE
-app.put("/api/articles/:id", isAuthenticated, async (req, res, next) => {
-  try {
-    const user = req.user as any;
-    const id = Number(req.params.id);
-    const { title, content, categoryId } = req.body;
+      if (!(user?.role === "admin" || current.authorId === user?.id)) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
 
-    const [current] = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
-    if (!current) return res.status(404).json({ message: "Not found" });
-    if (!canEditArticle(user, current)) return res.status(403).json({ message: "Forbidden" });
-
-    const [updated] = await db
-      .update(articles)
-      .set({
-        title,
-        content,
-        categoryId: categoryId ? Number(categoryId) : null,
-      })
-      .where(eq(articles.id, id))
-      .returning();
-
-    res.json(updated);
-  } catch (e) {
-    next(e);
-  }
-});
-
-// DELETE
-app.delete("/api/articles/:id", isAuthenticated, async (req, res, next) => {
-  try {
-    const user = req.user as any;
-    const id = Number(req.params.id);
-
-    const [current] = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
-    if (!current) return res.status(404).json({ message: "Not found" });
-    if (!canEditArticle(user, current)) return res.status(403).json({ message: "Forbidden" });
-
-    await db.delete(articles).where(eq(articles.id, id));
-    res.sendStatus(204);
-  } catch (e) {
-    next(e);
-  }
-});
-// after your categories join
-const flattenedCats = rows.map((r: any) => r.categories ?? r);
-const seenCats = new Set<number>();
-const uniqueCats = flattenedCats.filter((c: any) => !seenCats.has(c.id) && seenCats.add(c.id));
-res.json(uniqueCats);
-
-// after your articles join
-const flattenedArts = rows.map((r: any) => r.articles ?? r);
-const seenArts = new Set<number>();
-const uniqueArts = flattenedArts.filter((a: any) => !seenArts.has(a.id) && seenArts.add(a.id));
-res.json(uniqueArts);
-
+      await db.delete(articles).where(eq(articles.id, id));
+      res.sendStatus(204);
+    } catch (e) {
+      next(e);
+    }
+  });
 
   // ---------- Create HTTP server ----------
   const server: Server = createServer(app);
