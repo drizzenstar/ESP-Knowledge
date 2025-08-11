@@ -68,30 +68,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ---------- Categories ----------
 
   // LIST: admin ? all; user ? created_by = user OR has permission
-  app.get("/api/categories", isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const user = req.user as any;
+  app.get("/api/categories", isAuthenticated, async (req, res, next) => {
+  try {
+    const user = req.user as any;
 
-      if (user?.role === "admin") {
-        const rows = await db.select().from(categories).orderBy(categories.id);
-        return res.json(rows);
-      }
-
-      // left join permissions so we include categories the user was granted access to
-      const rows = await db
-        .select()
-        .from(categories)
-        .leftJoin(permissions, eq(permissions.categoryId, categories.id))
-        .where(or(eq(categories.createdBy, user.id), eq(permissions.userId, user.id)))
-        .orderBy(categories.id);
-
-      // leftJoin returns { categories, permissions } — flatten to the category row
-      const flattened = rows.map((r: any) => r.categories ?? r);
-      res.json(flattened);
-    } catch (e) {
-      next(e);
+    if (user?.role === "admin") {
+      const rows = await db.select().from(categories).orderBy(categories.id);
+      return res.json(rows);
     }
-  });
+
+    const rows = await db
+      .select()
+      .from(categories)
+      .leftJoin(permissions, eq(permissions.categoryId, categories.id))
+      .where(or(eq(categories.createdBy, user.id), eq(permissions.userId, user.id)))
+      .orderBy(categories.id);
+
+    // flatten + de-dupe
+    const flattened = rows.map((r: any) => r.categories ?? r);
+    const seen = new Set<number>();
+    const unique = flattened.filter((c: any) => !seen.has(c.id) && seen.add(c.id));
+
+    return res.json(unique);
+  } catch (e) {
+    next(e);
+  }
+});
 
   // CREATE: records created_by and grants the creator write permission
   app.post("/api/categories", isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
@@ -150,13 +152,17 @@ app.get("/api/articles", isAuthenticated, async (req, res, next) => {
       .where(or(eq(articles.authorId, user.id), eq(permissions.userId, user.id)))
       .orderBy(articles.id);
 
-    // leftJoin returns { articles, permissions } ? flatten to the article row
+    // flatten + de-dupe
     const flattened = rows.map((r: any) => r.articles ?? r);
-    res.json(flattened);
+    const seen = new Set<number>();
+    const unique = flattened.filter((a: any) => !seen.has(a.id) && seen.add(a.id));
+
+    return res.json(unique);
   } catch (e) {
     next(e);
   }
 });
+
 
 // CREATE: set authorId to the current user
 app.post("/api/articles", isAuthenticated, async (req, res, next) => {
